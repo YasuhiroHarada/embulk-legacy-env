@@ -14,7 +14,7 @@ in:
   host: {{ env.DB_HOST }}
   user: {{ env.DB_USER }}
   password: {{ env.DB_PASS }}
-  database: 
+  database: {{ env.DB_NAME }}
   fetch_rows: 100000
   schema: dbo
   table: {{ env.TABLE_NAME}}
