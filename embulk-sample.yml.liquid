@@ -1,0 +1,54 @@
+# This configuration connects to SQL Server using Native ODBC Driver 17, 
+# extracts data from a specified table, and outputs it in snappy-compressed Parquet format to both Wasabi and AWS S3. 
+# Connection details and credentials are managed via environment variables. 
+# Timestamps are formatted with a specified timezone. 
+# Make sure the ODBC driver is properly installed and registered on your system. 
+# This setup is a typical ETL pattern for efficient data export and cloud storage redundancy.
+
+in:
+  type: sqlserver
+  # Use ODBC Native Driver 17 for SQL Server
+  native_driver: "ODBC Driver 17 for SQL Server"
+  # for postgresql
+  # driver_path: {{ env.POSTGRESQL_JDBC_DRIVER_PATH }}
+  host: {{ env.DB_HOST }}
+  user: {{ env.DB_USER }}
+  password: {{ env.DB_PASS }}
+  database: 
+  fetch_rows: 100000
+  schema: dbo
+  table: {{ env.TABLE_NAME}}
+  default_column_options:
+    TIMESTAMP: {type: string, timestamp_format: '%Y/%m/%d %H:%M:%S %:z', timezone: '+0900'}
+    BIGINT: {type: string}
+out:
+  # Use output_multi plugin to output to both Wasabi and AWS
+  type: multi
+  outputs:
+    # WASABI    
+    - type: s3_parquet
+      endpoint: {{ env.WASABI_ENDPOINT }}
+      region: {{ env.WASABI_REGION }}
+      bucket: {{ env.WASABI_BUCKET }}
+      path_prefix: {{ env.WASABI_PATH_PREFIX }}
+      file_ext: snappy.parquet
+      compression_codec: snappy
+      default_timezone: Asia/Tokyo
+      auth_method: basic
+      access_key_id: {{ env.WASABI_ACCESS_KEY }}
+      secret_access_key: {{ env.WASABI_SECRET }}
+    # AWS S3
+    - type: s3_parquet
+      endpoint: {{ env.AWS_ENDPOINT }}
+      region: {{ env.AWS_REGION }}
+      bucket: {{ env.AWS_BUCKET }}
+      path_prefix: {{ env.AWS_PATH_PREFIX }}
+      file_ext: snappy.parquet
+      compression_codec: snappy
+      default_timezone: Asia/Tokyo
+      auth_method: basic
+      access_key_id: {{ env.AWS_ACCESS_KEY }}
+      secret_access_key: {{ env.AWS_SECRET }}
+  default_column_options:
+    timestamp: {converted_type: timestamp-millis}
+exec: {min_output_tasks: 1}
